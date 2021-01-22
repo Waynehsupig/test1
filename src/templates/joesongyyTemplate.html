@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+	<head>
+		{% load static %}
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+		<title>CEC101 Website</title>
+		<link rel="shortcut icon" href="../favicon.ico">
+		<link rel="stylesheet" type="text/css" href="{% static 'css/normalize.css' %}" />
+		<link rel="stylesheet" type="text/css" href="{% static 'css/demo.css' %}" />
+		<link rel="stylesheet" type="text/css" href="{% static 'css/component.css' %}" />
+		<link rel="stylesheet" type="text/css" href="{% static 'css/chatRoomStyle.css' %}" />
+		<script src="{% static 'js/modernizr.custom.js' %}"></script>
+	</head>
+	<body onload="connect();">
+		<div class="container">
+			<ul id="gn-menu" class="gn-menu-main">
+				<li class="gn-trigger">
+					<a class="gn-icon gn-icon-menu"><span>Menu</span></a>
+					<nav class="gn-menu-wrapper">
+						<div class="gn-scroller">
+							<ul class="gn-menu">
+								<li class="gn-search-item">
+									<input placeholder="Search" type="search" class="gn-search">
+									<a class="gn-icon gn-icon-search"><span>Search</span></a>
+								</li>
+								<li>
+									<a class="gn-icon gn-icon-download"
+									   href="{% url 'jTemplate' %}">Joe</a>
+								</li>
+								<li>
+									<a class="gn-icon gn-icon-cog"
+									   href="{% url 'rayTemplate' %}">Ray</a>
+								</li>
+								<li>
+									<a class="gn-icon gn-icon-help"
+									   href="{% url 'abcTemplate' %}">ABC</a>
+								</li>
+								<li>
+									<a class="gn-icon gn-icon-archive"
+									   href="{% url 'yorkTemplate' %}">York</a>
+								</li>
+							</ul>
+						</div><!-- /gn-scroller -->
+					</nav>
+				</li>
+				<li><a class="codrops-icon codrops-icon-prev" href="#"><span></span></a></li>
+				<li><a class="codrops-icon codrops-icon-drop" href="#"><span></span></a></li>
+			</ul>
+		</div><!-- /container -->
+		<div style="margin-right: 10vh; margin-left: 10vh; margin-top: 15vh;">
+				<textarea id="messagesArea" class="panel message-area" readonly
+						  style="height: 70vh"></textarea>
+				<div class="panel input-area">
+					<input id="userName" class="text-field" type="text" placeholder="使用者名稱"/>
+					<input id="message"  class="text-field" type="text" placeholder="訊息"
+						   onkeydown="if (event.keyCode == 13) sendMessage();"/>
+					<input type="submit" id="sendMessage" class="button" value="送出" onclick="sendMessage();"/>
+					<input type="button" id="connect" class="button" value="連線" onclick="connect();"
+						style="display: none"/>
+				</div>
+		</div>
+		<script src="{% static 'js/classie.js' %}"></script>
+		<script src="{% static 'js/gnmenu.js' %}"></script>
+		<script>
+			new gnMenu( document.getElementById( 'gn-menu' ) );
+
+			var MyPoint = "/MyEchoServer/joesongyy/101";
+			var host = window.location.host;
+			var path = window.location.pathname;
+			var webCtx = path.substring(0, path.indexOf('/', 1));
+			var endPointURL = "ws://" + "192.168.0.195:8080" + "/ChatRoomServer" + MyPoint;
+
+			var statusOutput = document.getElementById("statusOutput");
+			var webSocket;
+
+			function connect() {
+
+				console.log('endPointURL = ' + endPointURL);
+
+				// 建立 websocket 物件
+				webSocket = new WebSocket(endPointURL);
+
+				webSocket.onopen = function(event) {
+					updateStatus("WebSocket opened");
+					document.getElementById('sendMessage').disabled = false;
+					document.getElementById('connect').disabled = true;
+					document.getElementById('disconnect').disabled = false;
+				};
+
+				webSocket.onmessage = function(event) {
+					var messagesArea = document.getElementById("messagesArea");
+					var jsonObj = JSON.parse(event.data);
+					var message = jsonObj.userName + ": " + jsonObj.message + "\r\n";
+					messagesArea.value = messagesArea.value + message;
+					messagesArea.scrollTop = messagesArea.scrollHeight;
+				};
+
+				webSocket.onclose = function(event) {
+					updateStatus("WebSocket closed");
+				};
+			}
+
+			var inputUserName = document.getElementById("userName");
+			inputUserName.focus();
+
+			function sendMessage() {
+				var userName = inputUserName.value.trim();
+				if (userName === ""){
+					alert ("使用者名稱請勿空白!");
+					inputUserName.focus();
+					return;
+				}
+
+				var inputMessage = document.getElementById("message");
+				var message = inputMessage.value.trim();
+
+				if (message === ""){
+					alert ("訊息請勿空白!");
+					inputMessage.focus();
+				}else{
+					var jsonObj = {"userName" : userName, "message" : message};
+					webSocket.send(JSON.stringify(jsonObj));
+					inputMessage.value = "";
+					inputMessage.focus();
+				}
+			}
+
+			function disconnect () {
+				webSocket.close();
+				document.getElementById('sendMessage').disabled = true;
+				document.getElementById('connect').disabled = false;
+				document.getElementById('disconnect').disabled = true;
+			}
+
+			function updateStatus(newStatus) {
+				statusOutput.innerHTML = newStatus;
+			}
+
+		</script>
+	</body>
+</html>
